@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 // Google Maps imports
 import { Loader } from '@googlemaps/js-api-loader';
+import { GOOGLE_MAPS_API_KEY } from '@/config/constants';
 
 const formSchema = z.object({
   title: z.string().min(3, {
@@ -54,7 +55,6 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [apiKey, setApiKey] = useState<string>('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -73,11 +73,11 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
 
   useEffect(() => {
     const initializeMap = async () => {
-      if (!apiKey || !mapContainer.current) return;
+      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE' || !mapContainer.current) return;
       
       try {
         const loader = new Loader({
-          apiKey: apiKey,
+          apiKey: GOOGLE_MAPS_API_KEY,
           version: "weekly",
           libraries: ["places", "geometry"]
         });
@@ -139,16 +139,16 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         map.current.currentMarker.setMap(null);
       }
     };
-  }, [apiKey, form]);
+  }, [form]);
 
   useEffect(() => {
     const updateMapLocation = async () => {
-      if (defaultValues && map.current && mapLoaded && apiKey) {
+      if (defaultValues && map.current && mapLoaded && GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
         const { latitude, longitude } = defaultValues.location;
         setLocation({ latitude, longitude });
 
         const loader = new Loader({
-          apiKey: apiKey,
+          apiKey: GOOGLE_MAPS_API_KEY,
           version: "weekly",
           libraries: ["marker"]
         });
@@ -173,7 +173,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
     };
 
     updateMapLocation();
-  }, [defaultValues, mapLoaded, apiKey]);
+  }, [defaultValues, mapLoaded]);
 
   async function onSubmitHandler(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -356,18 +356,12 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
             {/* Map Preview */}
             <div className="w-full">
               <Label>Select Location on Map</Label>
-              {!apiKey && (
+              {(!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') && (
                 <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <Label htmlFor="api-key">Google Maps API Key</Label>
-                  <Input
-                    id="api-key"
-                    type="text"
-                    placeholder="Enter your Google Maps API key"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Please add your Google Maps API key to <code className="bg-gray-100 px-1 rounded">src/config/constants.ts</code> to enable map functionality.
+                  </p>
+                  <p className="text-xs text-gray-500">
                     Get your key from <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>
                   </p>
                 </div>

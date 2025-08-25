@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import IssueFilterControl from './IssueFilterControl';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
+import { GOOGLE_MAPS_API_KEY } from '@/config/constants';
 
 // Ayodhya coordinates
 const AYODHYA_COORDINATES = { lat: 26.7922, lng: 82.1998 };
@@ -35,7 +36,6 @@ const IssueMap: React.FC<IssueMapProps> = ({
   }>({});
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string>('');
 
   // Filter issues based on the selected filters
   const filteredIssues = issues.filter((issue) => {
@@ -51,12 +51,12 @@ const IssueMap: React.FC<IssueMapProps> = ({
   // Initialize Google Maps when component mounts
   useEffect(() => {
     const initializeMap = async () => {
-      if (!apiKey) return;
+      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') return;
       
       if (!map.current && mapContainer.current) {
         try {
-          const loader = new Loader({
-            apiKey: apiKey,
+    const loader = new Loader({
+      apiKey: GOOGLE_MAPS_API_KEY,
             version: "weekly",
             libraries: ["places", "geometry"]
           });
@@ -101,12 +101,12 @@ const IssueMap: React.FC<IssueMapProps> = ({
       });
       markersRef.current = [];
     };
-  }, [apiKey]);
+  }, []);
 
   // Add markers when issues or filters change
   useEffect(() => {
     const addMarkers = async () => {
-      if (!map.current || !mapLoaded || !apiKey) return;
+      if (!map.current || !mapLoaded || !GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') return;
 
       // Clear existing markers
       markersRef.current.forEach(marker => {
@@ -115,7 +115,7 @@ const IssueMap: React.FC<IssueMapProps> = ({
       markersRef.current = [];
 
       const loader = new Loader({
-        apiKey: apiKey,
+        apiKey: GOOGLE_MAPS_API_KEY,
         version: "weekly",
         libraries: ["marker"]
       });
@@ -189,7 +189,7 @@ const IssueMap: React.FC<IssueMapProps> = ({
     };
 
     addMarkers();
-  }, [issues, filteredIssues, mapLoaded, onIssueSelect, apiKey]);
+  }, [issues, filteredIssues, mapLoaded, onIssueSelect]);
 
   const handleFilterChange = (filters: { category?: IssueCategory; status?: IssueStatus }) => {
     setSelectedFilters(filters);
@@ -197,23 +197,13 @@ const IssueMap: React.FC<IssueMapProps> = ({
 
   return (
     <div className={`relative ${height} w-full`}>
-      {!apiKey && (
+      {(!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-20">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
             <h3 className="text-lg font-semibold mb-4">Google Maps API Key Required</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Please enter your Google Maps API key to display the map. 
+              Please add your Google Maps API key to <code className="bg-gray-100 px-1 rounded">src/config/constants.ts</code>.
               Get your key from <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>.
-            </p>
-            <Input
-              type="text"
-              placeholder="Enter your Google Maps API key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="mb-3"
-            />
-            <p className="text-xs text-gray-500">
-              Your API key is stored locally and not sent to our servers.
             </p>
           </div>
         </div>

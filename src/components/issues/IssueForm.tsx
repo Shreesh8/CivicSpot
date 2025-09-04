@@ -16,6 +16,7 @@ import { useIssues } from '@/contexts/IssueContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { Camera, X } from "lucide-react";
 
 // Google Maps imports
 import { Loader } from '@googlemaps/js-api-loader';
@@ -55,6 +56,8 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,10 +69,39 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         latitude: 0,
         longitude: 0,
       },
+      photos: [],
       isPublic: true,
     },
     mode: "onChange",
   });
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newPhotos = Array.from(files).slice(0, 2 - photos.length);
+    
+    newPhotos.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setPhotos(prev => {
+          const updated = [...prev, result].slice(0, 2);
+          form.setValue('photos', updated);
+          return updated;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      form.setValue('photos', updated);
+      return updated;
+    });
+  };
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -195,7 +227,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
           longitude: values.location.longitude,
           address: values.location.address || 'No address provided',
         },
-        photos: values.photos || [], // Ensure photos is always an array
+        photos: photos, // Use the photos state
       };
 
       if (issueId) {
@@ -367,6 +399,54 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
                 </div>
               )}
               <div ref={mapContainer} className="h-64 rounded border" />
+            </div>
+
+            {/* Photo Upload Section */}
+            <div>
+              <Label>Photos (Optional - Max 2)</Label>
+              <div className="mt-2">
+                {photos.length < 2 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                  >
+                    <Camera className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload photos ({photos.length}/2)
+                    </p>
+                  </div>
+                )}
+                
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    {photos.map((photo, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={photo}
+                          alt={`Issue photo ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </div>
             </div>
 
             <FormField

@@ -16,7 +16,8 @@ import { useIssues } from '@/contexts/IssueContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Camera, X } from "lucide-react";
+import { Camera, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { ImageVerificationService } from "@/services/imageVerification";
 
 // Google Maps imports
 import { Loader } from '@googlemaps/js-api-loader';
@@ -57,6 +58,8 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
   const map = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [photoVerifications, setPhotoVerifications] = useState<{[key: number]: {isValid: boolean; confidence: number; reason?: string}}>({});
+  const [isVerifying, setIsVerifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const autocomplete = useRef<any>(null);
@@ -77,24 +80,86 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
     mode: "onChange",
   });
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
+    const description = form.getValues('description');
+    const category = form.getValues('category');
+
+    if (!description || description.length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Description Required",
+        description: "Please provide a detailed description before uploading photos for verification.",
+      });
+      return;
+    }
+
     const newPhotos = Array.from(files).slice(0, 2 - photos.length);
+    setIsVerifying(true);
     
-    newPhotos.forEach(file => {
+    for (let i = 0; i < newPhotos.length; i++) {
+      const file = newPhotos[i];
       const reader = new FileReader();
-      reader.onload = (e) => {
+      
+      reader.onload = async (e) => {
         const result = e.target?.result as string;
-        setPhotos(prev => {
-          const updated = [...prev, result].slice(0, 2);
-          form.setValue('photos', updated);
-          return updated;
-        });
+        const photoIndex = photos.length + i;
+        
+        try {
+          // Verify the image matches the description
+          const verification = await ImageVerificationService.verifyImage(
+            result, 
+            description, 
+            category
+          );
+          
+          setPhotoVerifications(prev => ({
+            ...prev,
+            [photoIndex]: verification
+          }));
+
+          if (verification.isValid) {
+            setPhotos(prev => {
+              const updated = [...prev, result].slice(0, 2);
+              form.setValue('photos', updated);
+              return updated;
+            });
+            
+            toast({
+              title: "Image Verified",
+              description: verification.reason || `Image verified with ${verification.confidence}% confidence`,
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Image Verification Failed",
+              description: verification.reason || "The uploaded image does not match your issue description.",
+            });
+          }
+        } catch (error) {
+          console.error('Verification error:', error);
+          // Allow upload if verification fails
+          setPhotos(prev => {
+            const updated = [...prev, result].slice(0, 2);
+            form.setValue('photos', updated);
+            return updated;
+          });
+          
+          toast({
+            title: "Verification Unavailable",
+            description: "Image uploaded without verification.",
+          });
+        }
+        
+        if (i === newPhotos.length - 1) {
+          setIsVerifying(false);
+        }
       };
+      
       reader.readAsDataURL(file);
-    });
+    }
   };
 
   const removePhoto = (index: number) => {
@@ -102,6 +167,22 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
       const updated = prev.filter((_, i) => i !== index);
       form.setValue('photos', updated);
       return updated;
+    });
+    
+    setPhotoVerifications(prev => {
+      const updated = { ...prev };
+      delete updated[index];
+      // Reindex remaining verifications
+      const reindexed: typeof updated = {};
+      Object.keys(updated).forEach(key => {
+        const oldIndex = parseInt(key);
+        if (oldIndex > index) {
+          reindexed[oldIndex - 1] = updated[oldIndex];
+        } else if (oldIndex < index) {
+          reindexed[oldIndex] = updated[oldIndex];
+        }
+      });
+      return reindexed;
     });
   };
 
@@ -466,15 +547,24 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
             {/* Photo Upload Section */}
             <div>
               <Label>Photos (Optional - Max 2)</Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                Photos will be automatically verified against your description to ensure relevance.
+              </p>
               <div className="mt-2">
                 {photos.length < 2 && (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                    className={cn(
+                      "border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors",
+                      isVerifying && "opacity-50 cursor-not-allowed"
+                    )}
                   >
                     <Camera className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
-                      Click to upload photos ({photos.length}/2)
+                      {isVerifying 
+                        ? "Verifying images..." 
+                        : `Click to upload photos (${photos.length}/2)`
+                      }
                     </p>
                   </div>
                 )}
@@ -488,6 +578,29 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
                           alt={`Issue photo ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg"
                         />
+                        
+                        {/* Verification Status Badge */}
+                        {photoVerifications[index] && (
+                          <div className={cn(
+                            "absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                            photoVerifications[index].isValid
+                              ? "bg-green-100 text-green-800 border border-green-200"
+                              : "bg-red-100 text-red-800 border border-red-200"
+                          )}>
+                            {photoVerifications[index].isValid ? (
+                              <>
+                                <CheckCircle className="h-3 w-3" />
+                                Verified
+                              </>
+                            ) : (
+                              <>
+                                <AlertTriangle className="h-3 w-3" />
+                                Failed
+                              </>
+                            )}
+                          </div>
+                        )}
+                        
                         <button
                           type="button"
                           onClick={() => removePhoto(index)}
@@ -495,6 +608,13 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
                         >
                           <X className="h-4 w-4" />
                         </button>
+                        
+                        {/* Verification Details Tooltip */}
+                        {photoVerifications[index] && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/75 text-white text-xs p-2 rounded-b-lg">
+                            {photoVerifications[index].reason}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -532,8 +652,8 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
               )}
             />
 
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit"}
+            <Button type="submit" disabled={isSubmitting || isVerifying}>
+              {isSubmitting ? "Submitting..." : isVerifying ? "Verifying Images..." : "Submit"}
             </Button>
           </form>
         </Form>

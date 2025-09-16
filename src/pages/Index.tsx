@@ -67,18 +67,6 @@ const Index = () => {
       {/* Stats Section */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Success Rate Highlight */}
-          <div className="mb-8 flex justify-center">
-            <Card className="border-2 border-green-500/20 bg-green-50/50 dark:bg-green-950/20">
-              <CardContent className="pt-6 px-8">
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-green-600 mb-2">{successRate}%</div>
-                  <div className="text-lg font-semibold text-green-700 dark:text-green-400">Success Rate</div>
-                  <div className="text-sm text-muted-foreground">Problems resolved successfully</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="text-center">

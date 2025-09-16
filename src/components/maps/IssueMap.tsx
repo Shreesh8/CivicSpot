@@ -51,7 +51,7 @@ const IssueMap: React.FC<IssueMapProps> = ({
   // Initialize Google Maps when component mounts
   useEffect(() => {
     const initializeMap = async () => {
-      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') return;
+      if (!GOOGLE_MAPS_API_KEY) return;
       
       if (!map.current && mapContainer.current) {
         try {
@@ -106,7 +106,7 @@ const IssueMap: React.FC<IssueMapProps> = ({
   // Add markers when issues or filters change
   useEffect(() => {
     const addMarkers = async () => {
-      if (!map.current || !mapLoaded || !GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') return;
+      if (!map.current || !mapLoaded || !GOOGLE_MAPS_API_KEY) return;
 
       // Clear existing markers
       markersRef.current.forEach(marker => {
@@ -197,7 +197,7 @@ const IssueMap: React.FC<IssueMapProps> = ({
 
   return (
     <div className={`relative ${height} w-full`}>
-      {(!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') && (
+      {!GOOGLE_MAPS_API_KEY && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-20">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
             <h3 className="text-lg font-semibold mb-4">Google Maps API Key Required</h3>

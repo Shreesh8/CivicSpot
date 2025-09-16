@@ -201,7 +201,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
 
   useEffect(() => {
     const initializeMap = async () => {
-      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE' || !mapContainer.current) return;
+      if (!GOOGLE_MAPS_API_KEY || !mapContainer.current) return;
       
       try {
         const loader = new Loader({
@@ -315,7 +315,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
 
   useEffect(() => {
     const updateMapLocation = async () => {
-      if (defaultValues && map.current && mapLoaded && GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+      if (defaultValues && map.current && mapLoaded && GOOGLE_MAPS_API_KEY) {
         const { latitude, longitude } = defaultValues.location;
         setLocation({ latitude, longitude });
 
@@ -472,87 +472,22 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
               )}
             />
 
-            {/* Location Section */}
-            <div>
-              <Label>Location</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="location.latitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Latitude</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Latitude"
-                          type="number"
-                          {...field}
-                          value={location?.latitude !== undefined ? location.latitude.toString() : ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            setLocation(prev => ({ ...prev, latitude: value }));
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location.longitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Longitude</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Longitude"
-                          type="number"
-                          {...field}
-                          value={location?.longitude !== undefined ? location.longitude.toString() : ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            setLocation(prev => ({ ...prev, longitude: value }));
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Map Preview */}
+            {/* Map Location Selection */}
             <div className="w-full">
               <Label>Select Location on Map</Label>
-              {(!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">
-                    Please add your Google Maps API key to <code className="bg-gray-100 px-1 rounded">src/config/constants.ts</code> to enable map functionality.
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Get your key from <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>
-                  </p>
-                </div>
-              )}
               
               {/* Location Search Input */}
-              {GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE' && (
-                <div className="mb-4">
-                  <Input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Search for a location..."
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Type a location name or address, then click on the map to fine-tune
-                  </p>
-                </div>
-              )}
+              <div className="mb-4">
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search for a location..."
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Type a location name or address, then click on the map to fine-tune
+                </p>
+              </div>
               
               <div ref={mapContainer} className="h-64 rounded border" />
             </div>

@@ -65,13 +65,18 @@ serve(async (req) => {
     });
 
     if (!visionResponse.ok) {
-      throw new Error(`Vision API error: ${visionResponse.status}`);
+      const errorText = await visionResponse.text();
+      console.error(`Vision API HTTP error: ${visionResponse.status} - ${errorText}`);
+      throw new Error(`Vision API error: ${visionResponse.status} - ${errorText}`);
     }
 
     const visionData = await visionResponse.json();
+    console.log('Vision API response received');
+    
     const annotations = visionData.responses[0];
 
     if (annotations.error) {
+      console.error('Vision API response error:', annotations.error);
       throw new Error(`Vision API error: ${annotations.error.message}`);
     }
 
@@ -151,7 +156,8 @@ serve(async (req) => {
     }
 
     // Dynamic threshold based on category
-    const threshold = category === 'graffiti' || category === 'vegetation' ? 0.6 : 0.7;
+    const threshold = category === 'graffiti' || category === 'vegetation' ? 0.6 : 
+                     category === 'road_damage' ? 0.5 : 0.7;
     const isValid = maxScore >= threshold;
     const confidence = Math.round(maxScore * 100);
 

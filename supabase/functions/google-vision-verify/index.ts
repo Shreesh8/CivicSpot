@@ -22,8 +22,19 @@ serve(async (req) => {
     const { imageDataUrl, description, category } = await req.json();
     const visionApiKey = Deno.env.get('VISION_API_KEY');
 
+    console.log('Vision API Key status:', visionApiKey ? 'Found' : 'Not found');
+    console.log('Available env vars:', Object.keys(Deno.env.toObject()).filter(key => key.includes('VISION')));
+
     if (!visionApiKey) {
-      throw new Error('Google Vision API key not configured');
+      console.error('Google Vision API key not found in environment variables');
+      return new Response(JSON.stringify({
+        isValid: false,
+        confidence: 0,
+        reason: 'Google Vision API key not configured. Please check your Supabase secrets.'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Convert data URL to base64 string (remove data:image prefix)

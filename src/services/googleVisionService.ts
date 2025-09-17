@@ -46,7 +46,7 @@ export class GoogleVisionService {
         return cached.result;
       }
 
-      console.log(`Calling Google Vision API for category: ${category}`);
+      console.log(`Attempting Google Vision API for category: ${category}`);
 
       // Call Supabase edge function
       const { data, error } = await supabase.functions.invoke('google-vision-verify', {
@@ -59,11 +59,11 @@ export class GoogleVisionService {
 
       if (error) {
         console.error('Edge function error:', error);
-        return {
-          isValid: false,
-          confidence: 0,
-          reason: 'Vision verification service unavailable'
-        };
+        console.log('Falling back to local image verification');
+        
+        // Fallback to local verification from old service
+        const { ImageVerificationService: LocalVerificationService } = await import("@/services/imageVerification");
+        return await LocalVerificationService.verifyImage(imageDataUrl, description, category);
       }
 
       const result: VerificationResult = data;
@@ -78,11 +78,20 @@ export class GoogleVisionService {
 
     } catch (error) {
       console.error('Google Vision verification error:', error);
-      return {
-        isValid: false,
-        confidence: 0,
-        reason: 'Verification failed - please try again'
-      };
+      console.log('Falling back to local image verification');
+      
+      try {
+        // Fallback to local verification
+        const { ImageVerificationService: LocalVerificationService } = await import("@/services/imageVerification");
+        return await LocalVerificationService.verifyImage(imageDataUrl, description, category);
+      } catch (fallbackError) {
+        console.error('Fallback verification also failed:', fallbackError);
+        return {
+          isValid: false,
+          confidence: 0,
+          reason: 'Both Google Vision and local verification failed'
+        };
+      }
     }
   }
 

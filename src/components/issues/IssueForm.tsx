@@ -17,8 +17,9 @@ import { useIssues } from '@/contexts/IssueContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Camera, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { Camera, X, CheckCircle, AlertTriangle, MapPin } from "lucide-react";
 import { GoogleVisionService as ImageVerificationService } from "@/services/googleVisionService";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Google Maps imports
 import { Loader } from '@googlemaps/js-api-loader';
@@ -65,6 +66,9 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const autocomplete = useRef<any>(null);
+  const [showLocationConfirm, setShowLocationConfirm] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState<{latitude: number; longitude: number} | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -196,6 +200,75 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         }
       });
       return reindexed;
+    });
+  };
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        variant: "destructive",
+        title: "Geolocation Not Supported",
+        description: "Your browser does not support geolocation.",
+      });
+      return;
+    }
+
+    setIsLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentPosition({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setShowLocationConfirm(true);
+        setIsLoadingLocation(false);
+      },
+      (error) => {
+        setIsLoadingLocation(false);
+        toast({
+          variant: "destructive",
+          title: "Location Access Denied",
+          description: "Please enable location permissions to use this feature.",
+        });
+      }
+    );
+  };
+
+  const confirmUseCurrentLocation = async () => {
+    if (!currentPosition || !map.current) return;
+
+    const { latitude, longitude } = currentPosition;
+    
+    setLocation({ latitude, longitude });
+    form.setValue('location.latitude', latitude);
+    form.setValue('location.longitude', longitude);
+    form.setValue('location.address', 'Current Location');
+
+    map.current.panTo({ lat: latitude, lng: longitude });
+    map.current.setZoom(16);
+
+    const loader = new Loader({
+      apiKey: GOOGLE_MAPS_API_KEY!,
+      version: "weekly",
+      libraries: ["marker"]
+    });
+
+    const { AdvancedMarkerElement } = await loader.importLibrary("marker") as any;
+
+    if (map.current.currentMarker) {
+      map.current.currentMarker.setMap(null);
+    }
+
+    map.current.currentMarker = new AdvancedMarkerElement({
+      map: map.current,
+      position: { lat: latitude, lng: longitude },
+      title: "Current Location"
+    });
+
+    setShowLocationConfirm(false);
+    toast({
+      title: "Location Set",
+      description: "Your current location has been set as the issue location.",
     });
   };
 
@@ -477,16 +550,29 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
               <Label>Select Location on Map</Label>
               
               {/* Location Search Input */}
-              <div className="mb-4">
+              <div className="mb-4 space-y-2">
                 <Input
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search for a location..."
                   className="w-full"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Type a location name or address, then click on the map to fine-tune
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Type a location name or address, then click on the map to fine-tune
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUseMyLocation}
+                    disabled={isLoadingLocation}
+                    className="flex items-center gap-2"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    {isLoadingLocation ? "Getting Location..." : "Use My Location"}
+                  </Button>
+                </div>
               </div>
               
               <div ref={mapContainer} className="h-64 rounded border" />
@@ -606,6 +692,29 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
           </form>
         </Form>
       </CardContent>
+
+      {/* Location Confirmation Dialog */}
+      <AlertDialog open={showLocationConfirm} onOpenChange={setShowLocationConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Use Current Location?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to set your current location as the location of this issue?
+              {currentPosition && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Coordinates: {currentPosition.latitude.toFixed(6)}, {currentPosition.longitude.toFixed(6)}
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUseCurrentLocation}>
+              Yes, Use This Location
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

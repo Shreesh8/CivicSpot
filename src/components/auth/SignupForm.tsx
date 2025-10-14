@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
-import { Mail, Phone, Chrome } from "lucide-react";
-import PhoneLoginForm from "./PhoneLoginForm";
+import { useToast } from "@/hooks/use-toast";
+import { Mail, Chrome } from "lucide-react";
 
 const SignupForm = () => {
   const [name, setName] = useState("");
@@ -17,7 +16,6 @@ const SignupForm = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPhoneSignup, setShowPhoneSignup] = useState(false);
   const { signup, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -54,10 +52,6 @@ const SignupForm = () => {
     }
   };
 
-  if (showPhoneSignup) {
-    return <PhoneLoginForm onBack={() => setShowPhoneSignup(false)} />;
-  }
-
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -67,24 +61,14 @@ const SignupForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            onClick={handleGoogleSignup}
-            className="w-full"
-          >
-            <Chrome className="mr-2 h-4 w-4" />
-            Google
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowPhoneSignup(true)}
-            className="w-full"
-          >
-            <Phone className="mr-2 h-4 w-4" />
-            Phone
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={handleGoogleSignup}
+          className="w-full"
+        >
+          <Chrome className="mr-2 h-4 w-4" />
+          Continue with Google
+        </Button>
         
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

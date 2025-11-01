@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Create or update profile in Supabase
-        await supabase
+        const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
             user_id: firebaseUser.uid,
@@ -51,12 +51,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             onConflict: 'user_id'
           });
 
+        if (profileError) {
+          console.error('Profile upsert error:', profileError);
+          toast({
+            title: "Profile sync error",
+            description: profileError.message,
+            variant: "destructive",
+          });
+        }
+
         // Fetch user role from Supabase
-        const { data: roleData, error } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', firebaseUser.uid)
           .maybeSingle();
+
+        if (roleError) {
+          console.error('Role fetch error:', roleError);
+        }
 
         setUser({
           id: firebaseUser.uid,
@@ -71,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -107,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // Create profile in Supabase
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           user_id: userCredential.user.uid,
@@ -115,13 +128,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: name,
         });
 
+      if (profileError) {
+        console.error('Profile insert error:', profileError);
+      }
+
       // Assign default 'reporter' role in Supabase
-      await supabase
+      const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
           user_id: userCredential.user.uid,
           role: 'reporter'
         });
+
+      if (roleError) {
+        console.error('Role insert error:', roleError);
+      }
 
       toast({
         title: "Account created",

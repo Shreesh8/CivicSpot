@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Report from "./pages/Report";
+import EditIssue from "./pages/EditIssue";
 import IssuePage from "./pages/IssuePage";
 import MyReports from "./pages/MyReports";
 import Admin from "./pages/Admin";
@@ -40,6 +41,7 @@ const App = () => (
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/report" element={<Report />} />
+                  <Route path="/edit-issue/:id" element={<EditIssue />} />
                   <Route path="/issue/:id" element={<IssuePage />} />
                   <Route path="/my-reports" element={<MyReports />} />
                   <Route path="/admin" element={<Admin />} />

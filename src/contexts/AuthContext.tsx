@@ -15,7 +15,7 @@ import {
   browserLocalPersistence
 } from "firebase/auth";
 
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 type AuthUser = {
   id: string;

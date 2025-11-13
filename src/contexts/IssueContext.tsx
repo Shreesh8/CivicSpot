@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
+import { logger } from "@/lib/logger";
 
 export type IssueCategory = 
   | "road_damage" 
@@ -108,7 +109,7 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIssues(data.map(dbToIssue));
       }
     } catch (error: any) {
-      console.error('Error fetching issues:', error);
+      logger.error('Error fetching issues:', error);
       toast({
         title: "Error loading issues",
         description: error.message,
@@ -141,7 +142,7 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
     } catch (error: any) {
-      console.error('Error adding issue:', error);
+      logger.error('Error adding issue:', error);
       toast({
         title: "Error reporting issue",
         description: error.message,
@@ -173,7 +174,7 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
     } catch (error: any) {
-      console.error('Error updating issue:', error);
+      logger.error('Error updating issue:', error);
       toast({
         title: "Error updating issue",
         description: error.message,
@@ -198,7 +199,7 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: "The issue has been deleted successfully",
       });
     } catch (error: any) {
-      console.error('Error deleting issue:', error);
+      logger.error('Error deleting issue:', error);
       toast({
         title: "Error deleting issue",
         description: error.message,

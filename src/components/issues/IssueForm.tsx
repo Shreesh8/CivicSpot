@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Camera, X, CheckCircle, AlertTriangle, MapPin } from "lucide-react";
 import { GoogleVisionService as ImageVerificationService } from "@/services/googleVisionService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { logger } from '@/lib/logger';
 
 // Google Maps imports
 import { Loader } from '@googlemaps/js-api-loader';
@@ -154,7 +155,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
             setTimeout(() => fileInputRef.current?.click(), 600);
           }
         } catch (error) {
-          console.error('Verification error:', error);
+          logger.error('Verification error:', error);
           // Block upload on error and prompt re-upload
           if (fileInputRef.current) fileInputRef.current.value = "";
           toast({
@@ -373,7 +374,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         });
 
       } catch (error) {
-        console.error('Error initializing Google Maps:', error);
+        logger.error('Error initializing Google Maps:', error);
       }
     };
 
@@ -471,7 +472,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         navigate('/');
       }
     } catch (error: any) {
-      console.error("Error submitting issue:", error);
+      logger.error("Error submitting issue:", error);
       toast({
         variant: "destructive",
         title: "Error Reporting Issue",

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface VerificationResult {
   isValid: boolean;
@@ -42,11 +43,11 @@ export class GoogleVisionService {
       const cacheKey = this.generateCacheKey(imageDataUrl, description, category);
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        console.log('Using cached Google Vision result');
+        logger.log('Using cached Google Vision result');
         return cached.result;
       }
 
-      console.log(`Attempting Google Vision API for category: ${category}`);
+      logger.log(`Attempting Google Vision API for category: ${category}`);
 
       // Call Supabase edge function
       const { data, error } = await supabase.functions.invoke('google-vision-verify', {
@@ -58,7 +59,7 @@ export class GoogleVisionService {
       });
 
       if (error) {
-        console.error('Google Vision API error:', error);
+        logger.error('Google Vision API error:', error);
         return {
           isValid: false,
           confidence: 0,
@@ -77,7 +78,7 @@ export class GoogleVisionService {
       return result;
 
     } catch (error) {
-      console.error('Google Vision verification error:', error);
+      logger.error('Google Vision verification error:', error);
       return {
         isValid: false,
         confidence: 0,

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/integrations/firebase/client";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -39,6 +40,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser>(null);
   const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
   const { toast } = useToast();
 
@@ -79,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             variant: "destructive",
           });
         } catch (error) {
-          console.error('Logout error:', error);
+          logger.error('Logout error:', error);
         }
       }
     }, 60000); // Check every minute
@@ -103,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
         if (profileError) {
-          console.error('Profile upsert error:', profileError);
+          logger.error('Profile upsert error:', profileError);
           toast({
             title: "Profile sync error",
             description: profileError.message,
@@ -119,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .maybeSingle();
 
         if (roleError) {
-          console.error('Role fetch error:', roleError);
+          logger.error('Role fetch error:', roleError);
         }
 
         setUser({
@@ -132,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
       }
       setLoading(false);
+      setAuthInitialized(true);
     });
 
     return () => unsubscribe();

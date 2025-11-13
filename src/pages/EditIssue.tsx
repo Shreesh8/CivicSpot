@@ -6,6 +6,7 @@ import { useIssues } from "@/contexts/IssueContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 const EditIssue = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +50,7 @@ const EditIssue = () => {
 
         setIssue(fetchedIssue);
       } catch (error) {
-        console.error("Error fetching issue:", error);
+        logger.error("Error fetching issue:", error);
         toast({
           variant: "destructive",
           title: "Error",

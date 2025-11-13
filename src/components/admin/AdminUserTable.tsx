@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,7 +80,7 @@ const AdminUserTable = () => {
 
       setUsers(usersWithRoles);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      logger.error("Error fetching users:", error);
       toast.error("Failed to load users");
     } finally {
       setLoading(false);
@@ -131,7 +132,7 @@ const AdminUserTable = () => {
       // Refresh the user list
       fetchUsers();
     } catch (error) {
-      console.error("Error changing role:", error);
+      logger.error("Error changing role:", error);
       toast.error("Failed to change role");
     }
   };

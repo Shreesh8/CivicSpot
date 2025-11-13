@@ -8,8 +8,9 @@ import { Plus, Filter, Layers } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import IssueFilterControl from './IssueFilterControl';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
 import { GOOGLE_MAPS_API_KEY } from '@/config/constants';
+import { logger } from '@/lib/logger';
+import { Input } from '@/components/ui/input';
 
 // Ayodhya coordinates
 const AYODHYA_COORDINATES = { lat: 26.7922, lng: 82.1998 };
@@ -86,7 +87,7 @@ const IssueMap: React.FC<IssueMapProps> = ({
           });
 
         } catch (error) {
-          console.error('Error initializing Google Maps:', error);
+          logger.error('Error initializing Google Maps:', error);
           setMapError('Failed to initialize map. Please check your API key and connection.');
         }
       }

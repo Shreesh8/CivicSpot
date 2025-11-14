@@ -462,6 +462,17 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         throw new Error('User must be logged in to submit an issue.');
       }
 
+      // Check email verification for new issues
+      if (!issueId && !user.emailVerified) {
+        toast({
+          variant: "destructive",
+          title: "Email Verification Required",
+          description: "Please verify your email address before reporting issues.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Rate limiting check for new issues only (not edits)
       if (!issueId) {
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();

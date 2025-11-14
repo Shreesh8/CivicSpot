@@ -2,6 +2,7 @@
 import React from "react";
 import IssueForm from "@/components/issues/IssueForm";
 import { useNavigate } from "react-router-dom";
+import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 
 const Report = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Report = () => {
           Fill out the form below to report a community issue that needs attention.
         </p>
       </div>
+      <EmailVerificationBanner />
       <IssueForm onSubmitSuccess={handleSubmitSuccess} />
     </div>
   );

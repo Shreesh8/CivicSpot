@@ -23,6 +23,7 @@ type AuthUser = {
   email: string;
   name?: string;
   role: "reporter" | "admin";
+  emailVerified: boolean;
 } | null;
 
 interface AuthContextType {
@@ -33,6 +34,7 @@ interface AuthContextType {
   signInWithGoogle: (rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
+  resendVerificationEmail: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -128,7 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
           name: firebaseUser.displayName || undefined,
-          role: roleData?.role || 'reporter'
+          role: roleData?.role || 'reporter',
+          emailVerified: firebaseUser.emailVerified
         });
       } else {
         setUser(null);
@@ -274,6 +277,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user?.role === "admin";
   };
 
+  const resendVerificationEmail = async (): Promise<void> => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error("No user logged in");
+      }
+
+      const { sendEmailVerification } = await import("firebase/auth");
+      await sendEmailVerification(auth.currentUser);
+
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox and verify your email address.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to send verification email",
+        description: error.message || "An unknown error occurred",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -282,6 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithGoogle,
     logout,
     isAdmin,
+    resendVerificationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

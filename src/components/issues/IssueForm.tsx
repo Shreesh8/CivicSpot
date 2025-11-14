@@ -21,17 +21,27 @@ import { Camera, X, CheckCircle, AlertTriangle, MapPin } from "lucide-react";
 import { GoogleVisionService as ImageVerificationService } from "@/services/googleVisionService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { logger } from '@/lib/logger';
+import { supabase } from "@/integrations/supabase/client";
 
 // Google Maps imports
 import { Loader } from '@googlemaps/js-api-loader';
 import { GOOGLE_MAPS_API_KEY } from '@/config/constants';
 
+// Constants for validation
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+const MAX_IMAGES = 5;
+const MAX_ISSUES_PER_HOUR = 5;
+
 const formSchema = z.object({
   title: z.string().min(3, {
     message: "Title must be at least 3 characters.",
+  }).max(200, {
+    message: "Title must be less than 200 characters.",
   }),
   description: z.string().min(10, {
     message: "Description must be at least 10 characters.",
+  }).max(2000, {
+    message: "Description must be less than 2000 characters.",
   }),
   category: z.enum(['road_damage', 'sanitation', 'lighting', 'graffiti', 'sidewalk', 'vegetation', 'other']),
   location: z.object({
@@ -39,7 +49,9 @@ const formSchema = z.object({
     longitude: z.number(),
     address: z.string().optional(),
   }),
-  photos: z.array(z.string()).optional(),
+  photos: z.array(z.string()).max(MAX_IMAGES, {
+    message: `You can upload a maximum of ${MAX_IMAGES} photos.`,
+  }).optional(),
   isPublic: z.boolean().default(true),
 });
 
@@ -103,7 +115,29 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
       return;
     }
 
-    const newPhotos = Array.from(files).slice(0, 2 - photos.length);
+    // Check if we've reached max photos
+    if (photos.length >= MAX_IMAGES) {
+      toast({
+        variant: "destructive",
+        title: "Maximum Photos Reached",
+        description: `You can only upload up to ${MAX_IMAGES} photos per issue.`,
+      });
+      return;
+    }
+
+    // Validate file sizes
+    const oversizedFiles = Array.from(files).filter(file => file.size > MAX_IMAGE_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: `Each image must be less than 5MB. ${oversizedFiles.length} file(s) exceeded this limit.`,
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const newPhotos = Array.from(files).slice(0, MAX_IMAGES - photos.length);
     setIsVerifying(true);
     
     for (let i = 0; i < newPhotos.length; i++) {
@@ -129,7 +163,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
 
           if (verification.isValid) {
             setPhotos(prev => {
-              const updated = [...prev, result].slice(0, 2);
+              const updated = [...prev, result].slice(0, MAX_IMAGES);
               form.setValue('photos', updated);
               return updated;
             });
@@ -428,6 +462,28 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
         throw new Error('User must be logged in to submit an issue.');
       }
 
+      // Rate limiting check for new issues only (not edits)
+      if (!issueId) {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { count, error: countError } = await supabase
+          .from('issues')
+          .select('*', { count: 'exact', head: true })
+          .eq('reporter_id', user.id)
+          .gte('created_at', oneHourAgo);
+
+        if (countError) {
+          logger.error('Error checking rate limit:', countError);
+        } else if (count && count >= MAX_ISSUES_PER_HOUR) {
+          toast({
+            variant: "destructive",
+            title: "Rate Limit Exceeded",
+            description: `You can only report ${MAX_ISSUES_PER_HOUR} issues per hour. Please try again later.`,
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Ensure all required fields are present for addIssue
       const issueData = {
         title: values.title,
@@ -583,12 +639,12 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
 
             {/* Photo Upload Section */}
             <div>
-              <Label>Photos (Optional - Max 2)</Label>
+              <Label>Photos (Optional - Max 5, 5MB each)</Label>
               <p className="text-sm text-muted-foreground mb-2">
                 Photos will be automatically verified against your description to ensure relevance.
               </p>
               <div className="mt-2">
-                {photos.length < 2 && (
+                {photos.length < MAX_IMAGES && (
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className={cn(
@@ -600,14 +656,14 @@ const IssueForm: React.FC<IssueFormProps> = ({ issueId, defaultValues, onSubmit,
                     <p className="text-sm text-muted-foreground">
                       {isVerifying 
                         ? "Verifying images..." 
-                        : `Click to upload photos (${photos.length}/2)`
+                        : `Click to upload photos (${photos.length}/${MAX_IMAGES})`
                       }
                     </p>
                   </div>
                 )}
                 
                 {photos.length > 0 && (
-                  <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                     {photos.map((photo, index) => (
                       <div key={index} className="relative">
                         <img

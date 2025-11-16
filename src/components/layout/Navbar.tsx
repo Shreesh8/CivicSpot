@@ -11,7 +11,8 @@ import {
   LogIn,
   UserPlus,
   LogOut,
-  User
+  User,
+  Settings
 } from "lucide-react";
 import {
   Sheet,
@@ -33,6 +34,7 @@ const Navbar = () => {
   const navLinks = [
     { name: "Map", path: "/map", icon: <Map className="mr-2 h-4 w-4" /> },
     { name: "My Reports", path: "/my-reports", icon: <ClipboardList className="mr-2 h-4 w-4" />, requiresAuth: true },
+    { name: "Profile", path: "/profile", icon: <Settings className="mr-2 h-4 w-4" />, requiresAuth: true },
   ];
 
   // Add admin dashboard link for admin users

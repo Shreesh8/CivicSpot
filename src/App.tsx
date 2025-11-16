@@ -20,6 +20,7 @@ import Admin from "./pages/Admin";
 import About from "./pages/About";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Profile from "./pages/Profile";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 
@@ -47,6 +48,7 @@ const App = () => (
                     <Route path="/issue/:id" element={<IssuePage />} />
                     <Route path="/my-reports" element={<MyReports />} />
                     <Route path="/admin" element={<Admin />} />
+                    <Route path="/profile" element={<Profile />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/terms" element={<Terms />} />

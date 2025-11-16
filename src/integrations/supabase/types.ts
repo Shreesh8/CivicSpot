@@ -118,7 +118,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_issues: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_public: boolean | null
+          location_address: string | null
+          location_latitude: number | null
+          location_longitude: number | null
+          photos: string[] | null
+          reporter_name: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          location_address?: string | null
+          location_latitude?: number | null
+          location_longitude?: number | null
+          photos?: string[] | null
+          reporter_name?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_public?: boolean | null
+          location_address?: string | null
+          location_latitude?: number | null
+          location_longitude?: number | null
+          photos?: string[] | null
+          reporter_name?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {

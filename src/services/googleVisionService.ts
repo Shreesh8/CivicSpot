@@ -17,8 +17,20 @@ export class GoogleVisionService {
   private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   private static generateCacheKey(imageDataUrl: string, description: string, category: string): string {
-    const content = `${category}:${description}:${imageDataUrl.slice(0, 100)}`;
-    return btoa(content).slice(0, 32);
+    // Use more of the image data for uniqueness - sample from different parts of the base64 string
+    const imageLength = imageDataUrl.length;
+    const startSample = imageDataUrl.slice(50, 150);
+    const middleSample = imageDataUrl.slice(Math.floor(imageLength / 2), Math.floor(imageLength / 2) + 100);
+    const endSample = imageDataUrl.slice(-100);
+    const content = `${category}:${description}:${startSample}:${middleSample}:${endSample}`;
+    // Create a simple hash for the cache key
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return `${category}_${Math.abs(hash).toString(36)}`;
   }
 
   private static cleanCache() {

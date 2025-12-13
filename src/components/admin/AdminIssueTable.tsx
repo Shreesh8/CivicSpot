@@ -91,12 +91,33 @@ const AdminIssueTable = () => {
               {getStatusBadge(row.original.status)}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent className="bg-popover z-50">
             <DropdownMenuLabel>Change Status</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleStatusChange(row.original.id, "open")}>Open</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange(row.original.id, "in_progress")}>In Progress</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleStatusChange(row.original.id, "resolved")}>Resolved</DropdownMenuItem>
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault();
+                handleStatusChange(row.original.id, "open");
+              }}
+            >
+              Open
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault();
+                handleStatusChange(row.original.id, "in_progress");
+              }}
+            >
+              In Progress
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault();
+                handleStatusChange(row.original.id, "resolved");
+              }}
+            >
+              Resolved
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),

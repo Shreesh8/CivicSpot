@@ -35,11 +35,19 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const AdminIssueTable = () => {
+type AdminIssueTableProps = {
+  statusFilter?: IssueStatus;
+};
+
+const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
   const { issues, updateIssue } = useIssues();
+  const issuesForTable = React.useMemo(
+    () => (statusFilter ? issues.filter((i) => i.status === statusFilter) : issues),
+    [issues, statusFilter]
+  );
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  
+
   const formatCategory = (category: string) => {
     return category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
@@ -91,30 +99,24 @@ const AdminIssueTable = () => {
               {getStatusBadge(row.original.status)}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-popover z-50">
+          <DropdownMenuContent>
             <DropdownMenuLabel>Change Status</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onSelect={(e) => {
-                e.preventDefault();
-                handleStatusChange(row.original.id, "open");
-              }}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => handleStatusChange(row.original.id, "open")}
             >
               Open
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onSelect={(e) => {
-                e.preventDefault();
-                handleStatusChange(row.original.id, "in_progress");
-              }}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => handleStatusChange(row.original.id, "in_progress")}
             >
               In Progress
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              onSelect={(e) => {
-                e.preventDefault();
-                handleStatusChange(row.original.id, "resolved");
-              }}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => handleStatusChange(row.original.id, "resolved")}
             >
               Resolved
             </DropdownMenuItem>
@@ -136,22 +138,24 @@ const AdminIssueTable = () => {
       header: "Location",
       cell: ({ row }) => {
         const address = row.original.location.address;
-        return address ? address : `${row.original.location.latitude.toFixed(6)}, ${row.original.location.longitude.toFixed(6)}`;
+        return address
+          ? address
+          : `${row.original.location.latitude.toFixed(6)}, ${row.original.location.longitude.toFixed(6)}`;
       },
     },
     {
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <Link to={`/issue/${row.original.id}`}>
-          <Button variant="ghost" size="sm">View</Button>
-        </Link>
+        <Button asChild variant="ghost" size="sm">
+          <Link to={`/issue/${row.original.id}`}>View</Link>
+        </Button>
       ),
     },
   ];
 
   const table = useReactTable({
-    data: issues,
+    data: issuesForTable,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

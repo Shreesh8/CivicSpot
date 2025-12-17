@@ -122,13 +122,13 @@ const Admin = () => {
                   <AdminIssueTable />
                 </TabsContent>
                 <TabsContent value="open">
-                  <AdminIssueTable />
+                  <AdminIssueTable statusFilter="open" />
                 </TabsContent>
                 <TabsContent value="in_progress">
-                  <AdminIssueTable />
+                  <AdminIssueTable statusFilter="in_progress" />
                 </TabsContent>
                 <TabsContent value="resolved">
-                  <AdminIssueTable />
+                  <AdminIssueTable statusFilter="resolved" />
                 </TabsContent>
               </Tabs>
             </CardContent>

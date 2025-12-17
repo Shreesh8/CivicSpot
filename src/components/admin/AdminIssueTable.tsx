@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Issue, IssueCategory, IssueStatus, useIssues } from "@/contexts/IssueContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -41,12 +42,16 @@ type AdminIssueTableProps = {
 
 const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
   const { issues, updateIssue } = useIssues();
+  const { toast } = useToast();
+
   const issuesForTable = React.useMemo(
     () => (statusFilter ? issues.filter((i) => i.status === statusFilter) : issues),
     [issues, statusFilter]
   );
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  const navigate = useNavigate();
 
   const formatCategory = (category: string) => {
     return category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -66,6 +71,7 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
   };
 
   const handleStatusChange = (issueId: string, newStatus: IssueStatus) => {
+    toast({ title: "Updating status…" });
     updateIssue(issueId, { status: newStatus });
   };
 
@@ -79,9 +85,16 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
       accessorKey: "title",
       header: "Title",
       cell: ({ row }) => (
-        <Link to={`/issue/${row.original.id}`} className="text-primary hover:underline">
+        <Button
+          variant="link"
+          className="h-auto p-0 justify-start"
+          onClick={() => {
+            toast({ title: "Opening issue…" });
+            navigate(`/issue/${row.original.id}`);
+          }}
+        >
           {row.getValue("title")}
-        </Link>
+        </Button>
       ),
     },
     {
@@ -104,18 +117,21 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer"
+              onClick={() => handleStatusChange(row.original.id, "open")}
               onSelect={() => handleStatusChange(row.original.id, "open")}
             >
               Open
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"
+              onClick={() => handleStatusChange(row.original.id, "in_progress")}
               onSelect={() => handleStatusChange(row.original.id, "in_progress")}
             >
               In Progress
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"
+              onClick={() => handleStatusChange(row.original.id, "resolved")}
               onSelect={() => handleStatusChange(row.original.id, "resolved")}
             >
               Resolved
@@ -147,8 +163,15 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <Button asChild variant="ghost" size="sm">
-          <Link to={`/issue/${row.original.id}`}>View</Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            toast({ title: "Opening issue…" });
+            navigate(`/issue/${row.original.id}`);
+          }}
+        >
+          View
         </Button>
       ),
     },

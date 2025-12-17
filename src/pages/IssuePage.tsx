@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useIssues } from "@/contexts/IssueContext";
 import IssueDetail from "@/components/issues/IssueDetail";
@@ -8,24 +8,16 @@ import { ArrowLeft, MapPin } from "lucide-react";
 
 const IssuePage = () => {
   const { id } = useParams<{ id: string }>();
-  const { getIssue } = useIssues();
+  const { getIssue, loading } = useIssues();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
 
   const issue = id ? getIssue(id) : undefined;
 
   useEffect(() => {
-    if (id) {
-      // In a real app with API calls, we would fetch the issue here
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (!loading && !issue) {
+    if (!loading && id && !issue) {
       navigate("/not-found", { replace: true });
     }
-  }, [issue, loading, navigate]);
+  }, [issue, loading, id, navigate]);
 
   if (loading) {
     return (

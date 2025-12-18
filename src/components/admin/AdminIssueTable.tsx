@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Issue, IssueCategory, IssueStatus, useIssues } from "@/contexts/IssueContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -51,8 +51,6 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const navigate = useNavigate();
-
   const formatCategory = (category: string) => {
     return category.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
@@ -62,8 +60,10 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
       case "open":
         return <Badge variant="destructive">Open</Badge>;
       case "in_progress":
+        // TODO: replace with semantic token variant in design system
         return <Badge variant="outline" className="bg-civic-yellow text-black">In Progress</Badge>;
       case "resolved":
+        // TODO: replace with semantic token variant in design system
         return <Badge variant="outline" className="bg-civic-green text-white">Resolved</Badge>;
       default:
         return <Badge>{status}</Badge>;
@@ -85,16 +85,13 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
       accessorKey: "title",
       header: "Title",
       cell: ({ row }) => (
-        <Button
-          variant="link"
-          className="h-auto p-0 justify-start"
-          onClick={() => {
-            toast({ title: "Opening issue…" });
-            navigate(`/issue/${row.original.id}`);
-          }}
+        <Link
+          to={`/issue/${row.original.id}`}
+          className="text-primary underline-offset-4 hover:underline"
+          onClick={() => toast({ title: "Opening issue…" })}
         >
           {row.getValue("title")}
-        </Button>
+        </Link>
       ),
     },
     {
@@ -108,32 +105,24 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="p-0 hover:bg-transparent">
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onClick={() => toast({ title: "Opening status menu…" })}
+            >
               {getStatusBadge(row.original.status)}
-            </Button>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuLabel>Change Status</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => handleStatusChange(row.original.id, "open")}
-              onSelect={() => handleStatusChange(row.original.id, "open")}
-            >
+            <DropdownMenuItem onSelect={() => handleStatusChange(row.original.id, "open")}>
               Open
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => handleStatusChange(row.original.id, "in_progress")}
-              onSelect={() => handleStatusChange(row.original.id, "in_progress")}
-            >
+            <DropdownMenuItem onSelect={() => handleStatusChange(row.original.id, "in_progress")}>
               In Progress
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => handleStatusChange(row.original.id, "resolved")}
-              onSelect={() => handleStatusChange(row.original.id, "resolved")}
-            >
+            <DropdownMenuItem onSelect={() => handleStatusChange(row.original.id, "resolved")}>
               Resolved
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -163,15 +152,13 @@ const AdminIssueTable = ({ statusFilter }: AdminIssueTableProps) => {
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            toast({ title: "Opening issue…" });
-            navigate(`/issue/${row.original.id}`);
-          }}
-        >
-          View
+        <Button asChild variant="ghost" size="sm">
+          <Link
+            to={`/issue/${row.original.id}`}
+            onClick={() => toast({ title: "Opening issue…" })}
+          >
+            View
+          </Link>
         </Button>
       ),
     },

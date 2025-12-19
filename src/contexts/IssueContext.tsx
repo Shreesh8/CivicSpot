@@ -76,9 +76,9 @@ const issueToDb = (issue: Partial<Issue>) => ({
 interface IssueContextType {
   issues: Issue[];
   loading: boolean;
-  addIssue: (issue: Omit<Issue, "id" | "createdAt" | "updatedAt">) => void;
-  updateIssue: (id: string, updatedData: Partial<Issue>) => void;
-  deleteIssue: (id: string) => void;
+  addIssue: (issue: Omit<Issue, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  updateIssue: (id: string, updatedData: Partial<Issue>) => Promise<void>;
+  deleteIssue: (id: string) => Promise<void>;
   getIssue: (id: string) => Issue | undefined;
   filterIssues: (filters: { category?: IssueCategory; status?: IssueStatus }) => Issue[];
 }
@@ -123,7 +123,7 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addIssue = async (issue: Omit<Issue, "id" | "createdAt" | "updatedAt">) => {
     try {
       const dbIssue = issueToDb(issue);
-      
+
       const { data, error } = await supabase
         .from('issues')
         .insert([dbIssue])
@@ -134,8 +134,8 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (data) {
         const newIssue = dbToIssue(data);
-        setIssues([newIssue, ...issues]);
-        
+        setIssues((prev) => [newIssue, ...prev]);
+
         toast({
           title: "Issue Reported",
           description: "Thank you for reporting this issue!",
@@ -148,13 +148,30 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
   const updateIssue = async (id: string, updatedData: Partial<Issue>) => {
+    let previousIssue: Issue | undefined;
+
+    // Optimistic UI update (instant)
+    setIssues((current) => {
+      previousIssue = current.find((i) => i.id === id);
+      if (!previousIssue) return current;
+
+      const optimistic: Issue = {
+        ...previousIssue,
+        ...updatedData,
+        updatedAt: new Date().toISOString(),
+      };
+
+      return current.map((i) => (i.id === id ? optimistic : i));
+    });
+
     try {
       const dbUpdate = issueToDb(updatedData);
-      
+
       const { data, error } = await supabase
         .from('issues')
         .update(dbUpdate)
@@ -166,25 +183,36 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (data) {
         const updatedIssue = dbToIssue(data);
-        setIssues(issues.map(issue => issue.id === id ? updatedIssue : issue));
-        
+        setIssues((current) => current.map((i) => (i.id === id ? updatedIssue : i)));
+
         toast({
           title: "Issue Updated",
           description: "The issue has been updated successfully",
         });
       }
     } catch (error: any) {
+      // Revert optimistic update
+      if (previousIssue) {
+        setIssues((current) => current.map((i) => (i.id === id ? previousIssue! : i)));
+      }
+
       logger.error('Error updating issue:', error);
       toast({
         title: "Error updating issue",
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
   const deleteIssue = async (id: string) => {
     try {
+      const previousIssues = issues;
+
+      // Optimistic remove
+      setIssues((current) => current.filter((issue) => issue.id !== id));
+
       const { error } = await supabase
         .from('issues')
         .delete()
@@ -192,8 +220,6 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (error) throw error;
 
-      setIssues(issues.filter(issue => issue.id !== id));
-      
       toast({
         title: "Issue Deleted",
         description: "The issue has been deleted successfully",
@@ -205,6 +231,9 @@ export const IssueProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         description: error.message,
         variant: "destructive",
       });
+      // Refetch as a simple revert strategy
+      fetchIssues();
+      throw error;
     }
   };
 
